@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.media.CamcorderProfile;
 import android.os.Build;
 import androidx.core.content.ContextCompat;
+import id.forky.model.FaceModel;
+import id.forky.model.SpoofingModel;
 
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -113,9 +115,15 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   private int mCameraViewWidth = 0;
   private int mCameraViewHeight = 0;
 
+  // Face Verification Model
+  private FaceModel faceModel;
+  private SpoofingModel spoofingModel;
+
   public RNCameraView(ThemedReactContext themedReactContext) {
     super(themedReactContext, true);
     mThemedReactContext = themedReactContext;
+    faceModel = new FaceModel(themedReactContext);
+    spoofingModel = new SpoofingModel(themedReactContext);
     themedReactContext.addLifecycleEventListener(this);
 
     addCallback(new Callback() {
@@ -145,6 +153,11 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
                   .execute();
         }
         RNCameraViewHelper.emitPictureTakenEvent(cameraView);
+      }
+
+      @Override
+      public void onFaceVerified(CameraView cameraView, float[] data) {
+        // faceVerified emit event here
       }
 
       @Override
@@ -305,6 +318,36 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
           mPictureTakenDirectories.remove(promise);
 
           promise.reject("E_TAKE_PICTURE_FAILED", e.getMessage());
+        }
+      }
+    });
+  }
+
+  public void verifyFace(final ReadableMap options, final Promise promise) {
+    final int x = options.getInt("x");
+    final int y = options.getInt("y");
+    final int width = options.getInt("width");
+    final int height = options.getInt("height");
+
+    mBgHandler.post(new Runnable() {
+      @Override
+      public void run() {
+        Bitmap image = getPreview();
+        float[] output = null;
+        if (image != null) {
+          final Bitmap face = Bitmap.createBitmap(image, x, y, width, height);
+          Boolean isSpoofing = spoofingModel.run(face);
+          if (!isSpoofing)
+            output = faceModel.run(face);
+        }
+        if (output != null) {
+          WritableArray result = Arguments.createArray();
+          for (float x : output)
+            result.pushDouble((double) x);
+          promise.resolve(result);
+        } 
+        else {
+          promise.resolve(null);
         }
       }
     });

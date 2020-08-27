@@ -7,7 +7,6 @@ import {
   Alert,
   SafeAreaView,
   AppState,
-  TouchableOpacity,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import _ from 'underscore';
@@ -21,7 +20,6 @@ import {
   Spinner,
   H2,
   connectStyle,
-  Toast,
 } from 'native-base';
 import {RNCamera} from 'react-native-camera';
 import {NavigationEvents} from 'react-navigation';
@@ -29,21 +27,16 @@ import {NavigationEvents} from 'react-navigation';
 import conf from 'src/conf';
 import {getOrientation} from 'src/baseComponents/orientation';
 import KeyboardShiftView from 'src/baseComponents/KeyboardShiftView';
-import ZoomView from 'src/baseComponents/ZoomView';
 import {runAfterInteractions} from 'src/baseComponents/utils';
 import MainHeader from 'src/baseComponents/MainHeader';
 
-const IS_IOS = Platform.OS == 'ios';
+const IS_IOS = Platform.OS === 'ios';
 const touchCoordsSize = 100 * conf.theme.variables.sizeScaling;
 const flashIcons = {
-  on: <Icon transparent name="flash" type="MaterialCommunityIcons"></Icon>,
-  auto: (
-    <Icon transparent name="flash-auto" type="MaterialCommunityIcons"></Icon>
-  ),
-  off: <Icon transparent name="flash-off" type="MaterialCommunityIcons"></Icon>,
-  torch: (
-    <Icon transparent name="flashlight" type="MaterialCommunityIcons"></Icon>
-  ),
+  on: <Icon transparent name="flash" type="MaterialCommunityIcons" />,
+  auto: <Icon transparent name="flash-auto" type="MaterialCommunityIcons" />,
+  off: <Icon transparent name="flash-off" type="MaterialCommunityIcons" />,
+  torch: <Icon transparent name="flashlight" type="MaterialCommunityIcons" />,
 };
 const MAX_ZOOM = 8; // iOS only
 const ZOOM_F = IS_IOS ? 0.01 : 0.1;
@@ -77,18 +70,16 @@ const CUSTOM_WB_OPTIONS_MAP = {
   blueGainOffset: {label: 'Blue', min: -1.0, max: 1.0, steps: 0.05},
 };
 
-const getCameraType = (type) => {
-  if (type == 'AVCaptureDeviceTypeBuiltInTelephotoCamera') {
+const getCameraType = type => {
+  if (type === 'AVCaptureDeviceTypeBuiltInTelephotoCamera') {
     return 'zoomed';
   }
-  if (type == 'AVCaptureDeviceTypeBuiltInUltraWideCamera') {
+  if (type === 'AVCaptureDeviceTypeBuiltInUltraWideCamera') {
     return 'wide';
   }
 
   return 'normal';
 };
-
-const flex1 = {flex: 1};
 
 const styles = StyleSheet.create({
   content: {flex: 1},
@@ -110,11 +101,9 @@ const styles = StyleSheet.create({
     padding: 20 * conf.theme.variables.sizeScaling,
     paddingTop: 35 * conf.theme.variables.sizeScaling,
   },
-
   cameraButton: {
     flex: 1,
   },
-
   buttonsView: {
     flex: 1,
     backgroundColor: 'black',
@@ -123,18 +112,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   cameraSelectionRow: {
     flexDirection: 'row',
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   ratioButton: {
     width: 100 * conf.theme.variables.sizeScaling,
   },
-
   customWBView: {
     backgroundColor: '#00000080',
     flex: 1,
@@ -144,20 +130,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
   },
-
   customWBViewButton: {
     backgroundColor: 'transparent',
     alignSelf: 'center',
     width: '25%',
   },
-
   customWBViewText: {
     color: 'white',
+    minWidth: '15%',
   },
-
   customWBViewSlider: {
     flex: 2,
     marginRight: 6,
+  },
+  inferenceBox: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    zIndex: 10,
   },
 });
 
@@ -185,7 +176,9 @@ const defaultCameraOptions = {
 
 function parseRatio(str) {
   let [p1, p2] = str.split(':');
+  // eslint-disable-next-line radix
   p1 = parseInt(p1);
+  // eslint-disable-next-line radix
   p2 = parseInt(p2);
   return p1 / p2;
 }
@@ -202,26 +195,24 @@ class CameraSelectorButton extends React.PureComponent {
     let cameraType = camera.cameraType;
     let IconComp;
 
-    if (camera.type == BACK_TYPE) {
-      if (cameraType == 'wide') {
-        IconComp = (props) => (
-          <Icon {...props} name="zoom-out" type="Feather" />
-        );
-      } else if (cameraType == 'zoomed') {
-        IconComp = (props) => <Icon {...props} name="zoom-in" type="Feather" />;
+    if (camera.type === BACK_TYPE) {
+      if (cameraType === 'wide') {
+        IconComp = props => <Icon {...props} name="zoom-out" type="Feather" />;
+      } else if (cameraType === 'zoomed') {
+        IconComp = props => <Icon {...props} name="zoom-in" type="Feather" />;
       } else {
-        IconComp = (props) => (
+        IconComp = props => (
           <Icon {...props} name="camera-rear" type="MaterialIcons" />
         );
       }
-    } else if (camera.type == FRONT_TYPE) {
-      IconComp = (props) => (
+    } else if (camera.type === FRONT_TYPE) {
+      IconComp = props => (
         <Icon {...props} name="camera-front" type="MaterialIcons" />
       );
     }
     // should never happen
     else {
-      IconComp = (props) => (
+      IconComp = props => (
         <Icon {...props} normal name="ios-reverse-camera" type="Ionicons" />
       );
     }
@@ -240,7 +231,7 @@ class CameraSelector extends React.PureComponent {
 
     if (cameraId != null && cameraIds.length) {
       let newIdx =
-        (cameraIds.findIndex((i) => i.id == cameraId) + 1) % cameraIds.length;
+        (cameraIds.findIndex(i => i.id === cameraId) + 1) % cameraIds.length;
       onChange(cameraIds[newIdx].id);
     } else {
       // if no available camera ids, always call with null
@@ -260,11 +251,7 @@ class CameraSelector extends React.PureComponent {
     if (cameraId == null) {
       return (
         <Button transparent onPress={this.loopCamera} selfCenter>
-          <Icon
-            transparent
-            normal
-            name="ios-reverse-camera"
-            type="Ionicons"></Icon>
+          <Icon transparent normal name="ios-reverse-camera" type="Ionicons" />
         </Button>
       );
     }
@@ -275,14 +262,10 @@ class CameraSelector extends React.PureComponent {
     }
 
     // 2 cameras, 1 button, no set default option
-    if (cameraIds.length == 2) {
+    if (cameraIds.length === 2) {
       return (
         <Button transparent onPress={this.loopCamera} selfCenter>
-          <Icon
-            transparent
-            normal
-            name="ios-reverse-camera"
-            type="Ionicons"></Icon>
+          <Icon transparent normal name="ios-reverse-camera" type="Ionicons" />
         </Button>
       );
     }
@@ -295,7 +278,7 @@ class CameraSelector extends React.PureComponent {
             <CameraSelectorButton
               key={`${i}`}
               camera={v}
-              isSelected={cameraId == v.id}
+              isSelected={cameraId === v.id}
               onChange={this.props.onChange}
             />
           );
@@ -349,9 +332,9 @@ class Camera extends Component {
   };
 
   // audio permission will be android only
-  onCameraStatusChange = (s) => {
-    if (s.cameraStatus == 'READY') {
-      let audioDisabled = s.recordAudioPermissionStatus == 'NOT_AUTHORIZED';
+  onCameraStatusChange = s => {
+    if (s.cameraStatus === 'READY') {
+      let audioDisabled = s.recordAudioPermissionStatus === 'NOT_AUTHORIZED';
       this.setState({audioDisabled: audioDisabled}, async () => {
         let ids = [];
 
@@ -370,7 +353,7 @@ class Camera extends Component {
           ids = await this.camera.getCameraIdsAsync();
 
           // map deviceType to our types
-          ids = ids.map((d) => {
+          ids = ids.map(d => {
             d.cameraType = getCameraType(d.deviceType);
             return d;
           });
@@ -379,8 +362,9 @@ class Camera extends Component {
             // select the first back camera found
             cameraId = ids[0].id;
 
+            // eslint-disable-next-line no-unused-vars
             for (let c of ids) {
-              if (c.type == BACK_TYPE) {
+              if (c.type === BACK_TYPE) {
                 cameraId = c.id;
                 break;
               }
@@ -391,7 +375,7 @@ class Camera extends Component {
         }
 
         // sort ids so front cameras are first
-        ids = _.sortBy(ids, (v) => (v.type == FRONT_TYPE ? 0 : 1));
+        ids = _.sortBy(ids, v => (v.type === FRONT_TYPE ? 0 : 1));
 
         this.setState({cameraIds: ids, cameraId: cameraId});
       });
@@ -414,7 +398,7 @@ class Camera extends Component {
     }, 150);
   };
 
-  handleAppStateChange = (nextAppState) => {};
+  handleAppStateChange = nextAppState => {};
 
   onDidFocus = () => {
     this.focused = true;
@@ -425,7 +409,7 @@ class Camera extends Component {
     this.stopVideo();
   };
 
-  onPinchProgress = (p) => {
+  onPinchProgress = p => {
     let p2 = p - this._prevPinch;
 
     if (p2 > 0 && p2 > ZOOM_F) {
@@ -437,7 +421,7 @@ class Camera extends Component {
     }
   };
 
-  onTapToFocus = (touchOrigin) => {
+  onTapToFocus = touchOrigin => {
     if (!this.cameraStyle || this.state.takingPic) {
       return;
     }
@@ -583,17 +567,18 @@ class Camera extends Component {
         <Button
           transparent
           rounded
-          onPress={this.takePicture}
+          onPress={this.action}
           disabled={disableOrRecording}
           style={styles.cameraButton}>
           <Icon
             name={disableOrRecording ? 'camera-off' : 'camera'}
-            type="MaterialCommunityIcons"></Icon>
+            type="MaterialCommunityIcons"
+          />
         </Button>
 
         {recording ? (
           <Button transparent rounded onPress={this.stopVideo} danger>
-            <Icon name="video-slash" type="FontAwesome5"></Icon>
+            <Icon name="video-slash" type="FontAwesome5" />
           </Button>
         ) : (
           <Button
@@ -601,7 +586,7 @@ class Camera extends Component {
             rounded
             onPress={this.startVideo}
             disabled={disable}>
-            <Icon name="video" type="FontAwesome5"></Icon>
+            <Icon name="video" type="FontAwesome5" />
           </Button>
         )}
       </React.Fragment>
@@ -676,20 +661,13 @@ class Camera extends Component {
               title={'Camera'}
               navigation={this.props.navigation}
             />
-            <View
-              style={{
-                width: '100%',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                zIndex: 10,
-              }}>
+            <View style={styles.inferenceBox}>
               <Text>{`inference: ${this.state.inference}`}</Text>
               <Text>{`score: ${this.state.score}`}</Text>
             </View>
 
             <RNCamera
-              ref={(ref) => {
+              ref={ref => {
                 this.camera = ref;
               }}
               style={cameraStyle}
@@ -712,12 +690,7 @@ class Camera extends Component {
                 inputDimension: {width: 257, height: 257},
                 outputShape: [1, 9, 9, 17],
               }}
-              onModelProcessed={(data) => {
-                console.log(`body: ${JSON.stringify(data.body)}`);
-                console.log(`score: ${data.score}`);
-                console.log(`inference: ${data.inference}s`);
-                this.setState({score: data.score, inference: data.inference});
-              }}
+              // onModelProcessed={this.logPoseNet}
               whiteBalance={whiteBalance}
               autoFocusPointOfInterest={this.state.focusCoords}
               androidCameraPermissionOptions={{
@@ -743,6 +716,7 @@ class Camera extends Component {
               notAuthorizedView={<View>{cameraNotAuthorized}</View>}>
               {this.state.touchCoords ? (
                 <View
+                  // eslint-disable-next-line react-native/no-inline-styles
                   style={{
                     borderWidth: 2,
                     borderColor: takingPic ? 'red' : 'gray',
@@ -751,7 +725,8 @@ class Camera extends Component {
                     left: this.state.touchCoords.x,
                     width: touchCoordsSize,
                     height: touchCoordsSize,
-                  }}></View>
+                  }}
+                />
               ) : null}
             </RNCamera>
 
@@ -792,8 +767,7 @@ class Camera extends Component {
                         maximumTrackTintColor="#000000"
                         onValueChange={this.changeCustomWBOptionValue}
                       />
-                      <Text
-                        style={[styles.customWBViewText, {minWidth: '15%'}]}>
+                      <Text style={styles.customWBViewText}>
                         {customWhiteBalanceValue.toFixed(1)}
                       </Text>
                     </View>
@@ -841,7 +815,7 @@ class Camera extends Component {
                   <H2 transparent>{`Capturing Video${
                     audioDisabled ? ' (muted)' : ''
                   }... (${
-                    elapsed != -1 ? elapsed : 'Preparing Camera...'
+                    elapsed !== -1 ? elapsed : 'Preparing Camera...'
                   })`}</H2>
                 )}
               </View>
@@ -861,6 +835,35 @@ class Camera extends Component {
       </Container>
     );
   }
+
+  action = () => {
+    this.verifyFace();
+  };
+
+  logPoseNet = data => {
+    console.log(`body: ${JSON.stringify(data.body)}`);
+    console.log(`score: ${data.score}`);
+    console.log(`inference: ${data.inference}s`);
+    this.setState({score: data.score, inference: data.inference});
+  };
+
+  verifyFace = async () => {
+    if (this.camera) {
+      let options = {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+      };
+      try {
+        let data = await this.camera.verifyFace(options);
+        console.log('verify face ' + data.length);
+      } catch (err) {
+        Alert.alert('Error', 'Failed to verify face: ' + (err.message || err));
+        return;
+      }
+    }
+  };
 
   takePicture = async () => {
     if (this.camera) {
@@ -976,8 +979,8 @@ class Camera extends Component {
     });
   };
 
-  changeCustomWBOptionValue = (value) => {
-    this.setState((state) => ({
+  changeCustomWBOptionValue = value => {
+    this.setState(state => ({
       customWhiteBalance: {
         ...state.customWhiteBalance,
         [state.currentCustomWBOption]: value,
@@ -986,12 +989,12 @@ class Camera extends Component {
   };
 
   toggleRatio = () => {
-    if (this.state.aspectRatioStr == '4:3') {
+    if (this.state.aspectRatioStr === '4:3') {
       this.setState({
         aspectRatioStr: '1:1',
         aspectRatio: parseRatio('1:1'),
       });
-    } else if (this.state.aspectRatioStr == '1:1') {
+    } else if (this.state.aspectRatioStr === '1:1') {
       this.setState({
         aspectRatioStr: '16:9',
         aspectRatio: parseRatio('16:9'),
@@ -1004,7 +1007,7 @@ class Camera extends Component {
     }
   };
 
-  onCameraChange = (cameraId) => {
+  onCameraChange = cameraId => {
     this.setState({cameraReady: false}, () => {
       runAfterInteractions(() => {
         // cameraId will be null if we failed to get a camera by ID or
@@ -1012,7 +1015,7 @@ class Camera extends Component {
 
         if (cameraId == null) {
           let cameraType = this.state.cameraType;
-          if (cameraType == FRONT_TYPE) {
+          if (cameraType === FRONT_TYPE) {
             this.setState({
               cameraType: BACK_TYPE,
               cameraId: null,
@@ -1040,7 +1043,7 @@ class Camera extends Component {
 
 Camera.navigationOptions = ({navigation}) => {
   return {
-    header: (props) => null,
+    header: props => null,
   };
 };
 
