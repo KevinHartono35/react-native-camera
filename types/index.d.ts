@@ -425,6 +425,13 @@ interface TakePictureOptions {
   forceUpOrientation?: boolean;
 }
 
+interface FaceVerifyOption {
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+}
+
 export interface TakePictureResponse {
   width: number;
   height: number;
@@ -467,6 +474,7 @@ export class RNCamera extends Component<RNCameraProps & ViewProperties> {
   _cameraHandle: ReturnType<typeof findNodeHandle>;
 
   takePictureAsync(options?: TakePictureOptions): Promise<TakePictureResponse>;
+  verifyFace(options: FaceVerifyOption): Promise<float[] | undefined>;
   recordAsync(options?: RecordOptions): Promise<RecordResponse>;
   refreshAuthorizationStatus(): Promise<void>;
   stopRecording(): void;
