@@ -109,7 +109,7 @@ type PictureOptions = {
   pauseAfterCapture?: boolean,
 };
 
-type FaceOptions = {
+type VerifyFaceOptions = {
   x: number,
   y: number,
   width: number,
@@ -547,7 +547,7 @@ export default class Camera extends React.Component<PropsType, StateType> {
     return await CameraManager.takePicture(options, this._cameraHandle);
   }
 
-  async verifyFace(options: FaceOptions) {
+  async verifyFace(options: VerifyFaceOptions) {
     return await CameraManager.verifyFace(options, this._cameraHandle);
   }
 
