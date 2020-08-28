@@ -215,7 +215,7 @@ export interface RNCameraProps {
 
   // -- TENSORFLOW MODEL
 
-  modelConfig: ModelConfig;
+  modelConfig?: ModelConfig;
   onModelProcessed?(response: {data: string}): void;
 
   // -- FACE DETECTION PROPS
