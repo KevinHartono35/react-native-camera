@@ -18,6 +18,8 @@ package com.google.android.cameraview;
 
 import android.content.Context;
 import androidx.core.view.ViewCompat;
+
+import android.graphics.Bitmap;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -64,6 +66,16 @@ class SurfaceViewPreview extends PreviewImpl {
     @Override
     SurfaceHolder getSurfaceHolder() {
         return mSurfaceView.getHolder();
+    }
+
+    @Override
+    public Bitmap getFrame() {
+        mSurfaceView.setDrawingCacheEnabled(true);
+        mSurfaceView.buildDrawingCache(true);
+        final Bitmap bitmap = Bitmap.createBitmap( mSurfaceView.getDrawingCache() );
+        mSurfaceView.setDrawingCacheEnabled(false);
+        mSurfaceView.destroyDrawingCache();
+        return bitmap;
     }
 
     @Override

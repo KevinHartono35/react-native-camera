@@ -16,6 +16,7 @@
 
 package com.google.android.cameraview;
 
+import android.graphics.Bitmap;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -26,7 +27,7 @@ import android.view.View;
  */
 abstract class PreviewImpl {
 
-    interface Callback {
+    public interface Callback {
         void onSurfaceChanged();
 
         void onSurfaceDestroyed();
@@ -84,4 +85,5 @@ abstract class PreviewImpl {
         return mHeight;
     }
 
+    abstract public Bitmap getFrame();
 }

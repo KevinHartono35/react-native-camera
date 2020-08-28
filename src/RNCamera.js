@@ -13,7 +13,7 @@ import {
   StyleSheet,
   PermissionsAndroid,
 } from 'react-native';
-import type { FaceFeature } from './FaceDetector';
+import type { FaceFeature } from 'react-native-camera/src/FaceDetector';
 
 const Rationale = PropTypes.shape({
   title: PropTypes.string.isRequired,
@@ -108,6 +108,13 @@ type PictureOptions = {
   forceUpOrientation?: boolean,
   pauseAfterCapture?: boolean,
 };
+
+type FaceOptions = {
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+}
 
 type TrackedFaceFeature = FaceFeature & {
   faceID?: number,
@@ -538,6 +545,10 @@ export default class Camera extends React.Component<PropsType, StateType> {
     }
 
     return await CameraManager.takePicture(options, this._cameraHandle);
+  }
+
+  async verifyFace(options: FaceOptions) {
+    return await CameraManager.verifyFace(options, this._cameraHandle);
   }
 
   async getSupportedRatiosAsync() {
