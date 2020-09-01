@@ -324,33 +324,34 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   }
 
   public void verifyFace(final ReadableMap options, final Promise promise) {
-    final int x = options.getInt("x");
-    final int y = options.getInt("y");
-    final int width = options.getInt("width");
-    final int height = options.getInt("height");
-
-    mBgHandler.post(new Runnable() {
-      @Override
-      public void run() {
-        Bitmap image = getPreview();
-        float[] output = null;
-        if (image != null) {
-          final Bitmap face = Bitmap.createBitmap(image, x, y, width, height);
-          Boolean isSpoofing = spoofingModel.run(face);
-          if (!isSpoofing)
-            output = faceModel.run(face);
+    final Bitmap image = getPreview();
+    if (image != null) {
+      final int x = (int)(options.getDouble("x") * image.getWidth());
+      final int y = (int)(options.getDouble("y") * image.getHeight());
+      final int width = (int)(options.getDouble("width") * image.getWidth());
+      final int height = (int)(options.getDouble("height") * image.getHeight());
+      mBgHandler.post(new Runnable() {
+        @Override
+        public void run() {
+          float[] output = null;
+          if (image != null) {
+            final Bitmap face = Bitmap.createBitmap(image, x, y, width, height);
+            Boolean isSpoofing = spoofingModel.run(face);
+            if (!isSpoofing)
+              output = faceModel.run(face);
+          }
+          if (output != null) {
+            WritableArray result = Arguments.createArray();
+            for (float x : output)
+              result.pushDouble((double) x);
+            promise.resolve(result);
+          } 
+          else {
+            promise.resolve(null);
+          }
         }
-        if (output != null) {
-          WritableArray result = Arguments.createArray();
-          for (float x : output)
-            result.pushDouble((double) x);
-          promise.resolve(result);
-        } 
-        else {
-          promise.resolve(null);
-        }
-      }
-    });
+      });
+    }
   }
 
   @Override
