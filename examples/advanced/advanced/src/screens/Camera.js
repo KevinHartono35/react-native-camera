@@ -70,7 +70,7 @@ const CUSTOM_WB_OPTIONS_MAP = {
   blueGainOffset: {label: 'Blue', min: -1.0, max: 1.0, steps: 0.05},
 };
 
-const getCameraType = type => {
+const getCameraType = (type) => {
   if (type === 'AVCaptureDeviceTypeBuiltInTelephotoCamera') {
     return 'zoomed';
   }
@@ -197,22 +197,24 @@ class CameraSelectorButton extends React.PureComponent {
 
     if (camera.type === BACK_TYPE) {
       if (cameraType === 'wide') {
-        IconComp = props => <Icon {...props} name="zoom-out" type="Feather" />;
+        IconComp = (props) => (
+          <Icon {...props} name="zoom-out" type="Feather" />
+        );
       } else if (cameraType === 'zoomed') {
-        IconComp = props => <Icon {...props} name="zoom-in" type="Feather" />;
+        IconComp = (props) => <Icon {...props} name="zoom-in" type="Feather" />;
       } else {
-        IconComp = props => (
+        IconComp = (props) => (
           <Icon {...props} name="camera-rear" type="MaterialIcons" />
         );
       }
     } else if (camera.type === FRONT_TYPE) {
-      IconComp = props => (
+      IconComp = (props) => (
         <Icon {...props} name="camera-front" type="MaterialIcons" />
       );
     }
     // should never happen
     else {
-      IconComp = props => (
+      IconComp = (props) => (
         <Icon {...props} normal name="ios-reverse-camera" type="Ionicons" />
       );
     }
@@ -231,7 +233,7 @@ class CameraSelector extends React.PureComponent {
 
     if (cameraId != null && cameraIds.length) {
       let newIdx =
-        (cameraIds.findIndex(i => i.id === cameraId) + 1) % cameraIds.length;
+        (cameraIds.findIndex((i) => i.id === cameraId) + 1) % cameraIds.length;
       onChange(cameraIds[newIdx].id);
     } else {
       // if no available camera ids, always call with null
@@ -332,7 +334,7 @@ class Camera extends Component {
   };
 
   // audio permission will be android only
-  onCameraStatusChange = s => {
+  onCameraStatusChange = (s) => {
     if (s.cameraStatus === 'READY') {
       let audioDisabled = s.recordAudioPermissionStatus === 'NOT_AUTHORIZED';
       this.setState({audioDisabled: audioDisabled}, async () => {
@@ -353,7 +355,7 @@ class Camera extends Component {
           ids = await this.camera.getCameraIdsAsync();
 
           // map deviceType to our types
-          ids = ids.map(d => {
+          ids = ids.map((d) => {
             d.cameraType = getCameraType(d.deviceType);
             return d;
           });
@@ -375,7 +377,7 @@ class Camera extends Component {
         }
 
         // sort ids so front cameras are first
-        ids = _.sortBy(ids, v => (v.type === FRONT_TYPE ? 0 : 1));
+        ids = _.sortBy(ids, (v) => (v.type === FRONT_TYPE ? 0 : 1));
 
         this.setState({cameraIds: ids, cameraId: cameraId});
       });
@@ -398,7 +400,7 @@ class Camera extends Component {
     }, 150);
   };
 
-  handleAppStateChange = nextAppState => {};
+  handleAppStateChange = (nextAppState) => {};
 
   onDidFocus = () => {
     this.focused = true;
@@ -409,7 +411,7 @@ class Camera extends Component {
     this.stopVideo();
   };
 
-  onPinchProgress = p => {
+  onPinchProgress = (p) => {
     let p2 = p - this._prevPinch;
 
     if (p2 > 0 && p2 > ZOOM_F) {
@@ -421,7 +423,7 @@ class Camera extends Component {
     }
   };
 
-  onTapToFocus = touchOrigin => {
+  onTapToFocus = (touchOrigin) => {
     if (!this.cameraStyle || this.state.takingPic) {
       return;
     }
@@ -498,7 +500,6 @@ class Camera extends Component {
   onPictureTaken = () => {
     this.setState({takingPic: false});
   };
-
   onRecordingStart = () => {
     this.reportRequestPrompt = true;
 
@@ -542,6 +543,8 @@ class Camera extends Component {
       cameraIds,
       flashMode,
       elapsed,
+      layout,
+      faces,
     } = this.state;
     let {style} = this.props;
 
@@ -667,11 +670,15 @@ class Camera extends Component {
             </View>
 
             <RNCamera
-              ref={ref => {
+              ref={(ref) => {
                 this.camera = ref;
+              }}
+              onLayout={({nativeEvent}) => {
+                this.setState({layout: nativeEvent.layout});
               }}
               style={cameraStyle}
               type={cameraType}
+              onFacesDetected={this.onFacesDetected}
               cameraId={cameraId}
               //useCamera2Api={true}
               onAudioInterrupted={this.onAudioInterrupted}
@@ -840,7 +847,7 @@ class Camera extends Component {
     this.verifyFace();
   };
 
-  logPoseNet = data => {
+  logPoseNet = (data) => {
     console.log(`body: ${JSON.stringify(data.body)}`);
     console.log(`score: ${data.score}`);
     console.log(`inference: ${data.inference}s`);
@@ -850,19 +857,30 @@ class Camera extends Component {
   verifyFace = async () => {
     if (this.camera) {
       let options = {
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100,
+        x: this.state.faces[0].bounds.origin.x / this.state.layout.width,
+        y: this.state.faces[0].bounds.origin.y / this.state.layout.height,
+        width: this.state.faces[0].bounds.size.width / this.state.layout.width,
+        height:
+          this.state.faces[0].bounds.size.height / this.state.layout.height,
       };
+      console.log(options);
       try {
         let data = await this.camera.verifyFace(options);
+        this.camera.resumePreview();
         console.log('verify face ' + data.length);
       } catch (err) {
         Alert.alert('Error', 'Failed to verify face: ' + (err.message || err));
+        this.camera.resumePreview();
         return;
       }
     }
+  };
+
+  onFacesDetected = (responses: {faces: any[]}) => {
+    const faces = responses.faces;
+    this.setState({faces});
+    this.camera.pausePreview();
+    this.verifyFace();
   };
 
   takePicture = async () => {
@@ -979,8 +997,8 @@ class Camera extends Component {
     });
   };
 
-  changeCustomWBOptionValue = value => {
-    this.setState(state => ({
+  changeCustomWBOptionValue = (value) => {
+    this.setState((state) => ({
       customWhiteBalance: {
         ...state.customWhiteBalance,
         [state.currentCustomWBOption]: value,
@@ -1007,7 +1025,7 @@ class Camera extends Component {
     }
   };
 
-  onCameraChange = cameraId => {
+  onCameraChange = (cameraId) => {
     this.setState({cameraReady: false}, () => {
       runAfterInteractions(() => {
         // cameraId will be null if we failed to get a camera by ID or
@@ -1043,7 +1061,7 @@ class Camera extends Component {
 
 Camera.navigationOptions = ({navigation}) => {
   return {
-    header: props => null,
+    header: (props) => null,
   };
 };
 
